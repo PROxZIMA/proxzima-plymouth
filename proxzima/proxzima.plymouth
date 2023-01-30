@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=proxzima
+Description=A techno Plymouth theme with crazy ass animation.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/proxzima
+ScriptFile=/usr/share/plymouth/themes/proxzima/proxzima.script

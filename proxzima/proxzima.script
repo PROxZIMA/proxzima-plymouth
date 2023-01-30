@@ -1,0 +1,156 @@
+// Set top and bottom color to black
+Window.SetBackgroundTopColor (0.01953125, 0.01953125, 0.01953125); #050505
+Window.SetBackgroundBottomColor (0.01953125, 0.01953125, 0.01953125);
+
+
+// Screen size
+screen.w = Window.GetWidth();
+screen.h = Window.GetHeight();
+screen.half.w = Window.GetWidth() / 2;
+screen.half.h = Window.GetHeight() / 2;
+
+// Question prompt
+question = null;
+answer = null;
+
+// Message
+message = null;
+
+// Password prompt
+bullets = null;
+prompt = null;
+bullet.image = Image.Text("*", 1, 1, 1);
+
+// Flow
+state.status = "play";
+state.time = 0.0;
+
+// Image counts
+boot = 196;
+shut = 97;
+
+
+//--------------------------------- Display images --------------------------
+
+// Display a list of images while booting
+for (i = 0; i < boot; i++)
+  flyingman_image[i] = Image("boot-" + i + ".png");
+flyingman_sprite = Sprite();
+
+
+// Display a list of images while shutting down
+for (i = 0; i < shut; i++)
+  shutimg_image[i] = Image("shut-" + i + ".png");
+shutimg_sprite = Sprite();
+
+// set image position
+flyingman_sprite.SetX(screen.half.w - flyingman_image[0].GetWidth() / 2); # Place images in the center
+flyingman_sprite.SetY(screen.half.h - flyingman_image[0].GetHeight() / 2);
+
+shutimg_sprite.SetX(screen.half.w - shutimg_image[0].GetWidth() / 2); # Place images in the center
+shutimg_sprite.SetY(screen.half.h - shutimg_image[0].GetHeight() / 2);
+
+
+boot_progress = 0;
+shut_progress = 0;
+
+fun refresh_callback () {
+  if (Plymouth.GetMode() == "boot" || Plymouth.GetMode() == "resume" || Plymouth.GetMode() == "updates" || Plymouth.GetMode() == "system-upgrade" || Plymouth.GetMode() == "firmware-upgrade") {
+    flyingman_sprite.SetImage(flyingman_image[Math.Int(boot_progress / 1.6) % boot]);
+    boot_progress++;
+  }
+  else {
+    shutimg_sprite.SetImage(shutimg_image[Math.Int(shut_progress / 1.6) % shut]);
+    shut_progress++;
+  }
+}
+
+Plymouth.SetRefreshFunction (refresh_callback);
+
+
+//--------------------------------- Progress Bar ---------------------------
+
+if (Plymouth.GetMode() == "boot" || Plymouth.GetMode() == "resume" || Plymouth.GetMode() == "updates" || Plymouth.GetMode() == "system-upgrade" || Plymouth.GetMode() == "firmware-upgrade") {
+  progress_box.image = Image("progress_box.png");
+  progress_box.sprite = Sprite(progress_box.image);
+  progress_box.sprite.SetX(screen.half.w - progress_box.image.GetWidth() / 2); # Place images in the center
+  progress_box.sprite.SetY(screen.h - 105);
+
+  progress_bar.original_image = Image("progress_bar.png");
+  progress_bar.sprite = Sprite();
+  progress_bar.sprite.SetX(screen.half.w - progress_box.image.GetWidth() / 2); # Place images in the center
+  progress_bar.sprite.SetY(screen.h - 105);
+
+  fun progress_callback (duration, progress) {
+    if (progress_bar.image.GetWidth () != Math.Int (progress_bar.original_image.GetWidth () * progress)) {
+      progress_bar.image = progress_bar.original_image.Scale(progress_bar.original_image.GetWidth(progress_bar.original_image) * progress, progress_bar.original_image.GetHeight());
+      progress_bar.sprite.SetImage (progress_bar.image);
+    }
+  }
+
+  Plymouth.SetBootProgressFunction(progress_callback);
+}
+
+
+//-------------------------------- Password prompt -------------------------------
+fun DisplayQuestionCallback(prompt, entry) {
+  question = null;
+  answer = null;
+
+  if (entry == "")
+      entry = "<answer>";
+
+  question.image = Image.Text(prompt, 1, 1, 1);
+  question.sprite = Sprite(question.image);
+  question.sprite.SetX(screen.half.w - question.image.GetWidth() / 2);
+  question.sprite.SetY(screen.h - 4 * question.image.GetHeight());
+
+  answer.image = Image.Text(entry, 1, 1, 1);
+  answer.sprite = Sprite(answer.image);
+  answer.sprite.SetX(screen.half.w - answer.image.GetWidth() / 2);
+  answer.sprite.SetY(screen.h - 2 * answer.image.GetHeight());
+}
+Plymouth.SetDisplayQuestionFunction(DisplayQuestionCallback);
+
+
+//-------------------------------- Password prompt -------------------------------
+fun DisplayPasswordCallback(nil, bulletCount) {
+  state.status = "pause";
+  totalWidth = bulletCount * bullet.image.GetWidth();
+  startPos = screen.half.w - totalWidth / 2;
+
+  prompt.image = Image.Text("Enter Password", 1, 1, 1);
+  prompt.sprite = Sprite(prompt.image);
+  prompt.sprite.SetX(screen.half.w - prompt.image.GetWidth() / 2);
+  prompt.sprite.SetY(screen.h - 4 * prompt.image.GetHeight());
+
+  // Clear all bullets (user might hit backspace)
+  bullets = null;
+  for (i = 0; i < bulletCount; i++) {
+      bullets[i].sprite = Sprite(bullet.image);
+      bullets[i].sprite.SetX(startPos + i * bullet.image.GetWidth());
+      bullets[i].sprite.SetY(screen.h - 2 * bullet.image.GetHeight());
+  }
+}
+Plymouth.SetDisplayPasswordFunction(DisplayPasswordCallback);
+
+
+//------------------------- Normal display (unset all text) ----------------------
+fun DisplayNormalCallback() {
+    state.status = "play";
+    bullets = null;
+    prompt = null;
+    message = null;
+    question = null;
+    answer = null;
+}
+Plymouth.SetDisplayNormalFunction(DisplayNormalCallback);
+
+
+//---------------------------------- Message --------------------------------
+fun MessageCallback(text) {
+    message.image = Image.Text(text, 1, 1, 1);
+    message.sprite = Sprite(message.image);
+    message.sprite.SetPosition(screen.half.w - message.image.GetWidth() / 2, message.image.GetHeight());
+}
+Plymouth.SetMessageFunction(MessageCallback);
